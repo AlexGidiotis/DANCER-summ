@@ -126,7 +126,7 @@ if __name__ == "__main__":
     scorer = rouge_scorer.RougeScorer(metrics, use_stemmer=True)
 
     conf = pyspark.SparkConf()
-    conf.set('spark.driver.memory', '8g')
+    conf.set('spark.driver.memory', '12g')
     sc = pyspark.SparkContext(conf=conf)
     spark = pyspark.sql.SparkSession(sc)
 
