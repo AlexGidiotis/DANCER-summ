@@ -1,9 +1,10 @@
 python src/dancer_generation.py \
-    --model_path dancer_pubmed/models \
-    --data_path /home/jupyter/pubmed-dataset/processed/pubmed/test.json \
+    --mode standard \
+    --model_path pegasus_pubmed/models \
+    --dataset_name scientific_papers --dataset_config_name pubmed\
     --max_test_samples 100 \
-    --text_column document \
-    --summary_column summary \
+    --text_column article \
+    --summary_column abstract \
     --seed 100 \
     --test_batch_size 2 \
     --max_source_length 512 --max_summary_length 128 \
