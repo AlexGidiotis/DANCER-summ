@@ -1,14 +1,6 @@
 import os
-import glob
-import re
-import sys
-import json
-import random
-import operator
 
 import numpy as np
-import pandas as pd
-import nltk
 
 import pyspark
 from pyspark.sql import functions as F

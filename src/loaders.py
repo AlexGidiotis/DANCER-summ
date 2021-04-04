@@ -1,33 +1,7 @@
-import os
-import gc
-import sys
-import shutil
-import time
-import random
-import heapq
-import json
-import linecache
-import argparse
-import logging
-from tqdm import tqdm
-
-from statistics import stdev, mean
-
-from transformers import BartTokenizer, BartForConditionalGeneration, BartConfig, PegasusForConditionalGeneration, PegasusTokenizer
-from transformers.models.bart.modeling_bart import BartEncoderLayer, BartDecoderLayer
-from transformers.models.pegasus.modeling_pegasus import PegasusEncoderLayer, PegasusDecoderLayer
-
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
-from scipy.stats import entropy
-import numpy as np
-import pandas as pd
-
-from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
-from nltk.tokenize import sent_tokenize, word_tokenize
-
-from datasets import load_dataset, load_metric
+from datasets import load_dataset
 
 
 def init_loader(args):
@@ -51,7 +25,7 @@ def init_loader(args):
     return test_loader
 
 
-def load_model(args):
+def load_model(args, device):
     print(f"Loading tokenizer {args.tokenizer_name if args.tokenizer_name else args.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(
         args.tokenizer_name if args.tokenizer_name else args.model_path)

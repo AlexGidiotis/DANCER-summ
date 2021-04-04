@@ -562,8 +562,7 @@ def main():
         result["gen_len"] = np.mean(prediction_lens)
         result = {k: round(v, 4) for k, v in result.items()}
         return result
-    
-    
+
     es_callback = EarlyStoppingCallback(early_stopping_patience=3)
     # Initialize our Trainer
     trainer = Seq2SeqTrainer(
@@ -657,4 +656,3 @@ def _mp_fn(index):
 
 if __name__ == "__main__":
     main()
-   

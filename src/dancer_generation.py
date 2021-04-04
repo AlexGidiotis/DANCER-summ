@@ -1,33 +1,10 @@
-import os
-import gc
-import sys
-import shutil
 import time
 import random
-import heapq
-import json
-import linecache
 import argparse
 import logging
 from tqdm import tqdm
 
-from statistics import stdev, mean
-
-from transformers import BartTokenizer, BartForConditionalGeneration, BartConfig, PegasusForConditionalGeneration, PegasusTokenizer
-from transformers.models.bart.modeling_bart import BartEncoderLayer, BartDecoderLayer
-from transformers.models.pegasus.modeling_pegasus import PegasusEncoderLayer, PegasusDecoderLayer
-
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
-
-from scipy.stats import entropy
-import numpy as np
-import pandas as pd
-
-from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
-from nltk.tokenize import sent_tokenize, word_tokenize
-
-from datasets import load_dataset
 
 from src import scoring
 from src import loaders
@@ -41,8 +18,8 @@ doc_keys = {
 }
 
 
-def generate_summaries(test_loader, args):
-    model, tokenizer = loaders.load_model(args)
+def generate_summaries(test_loader, args, device):
+    model, tokenizer = loaders.load_model(args, device=device)
     
     gen_sums = []
     target_sums = []
@@ -54,7 +31,7 @@ def generate_summaries(test_loader, args):
             max_length=args.max_source_length,
             truncation=True,
             padding=True,
-            return_tensors = 'pt')
+            return_tensors='pt')
         
         input_ids = model_inputs['input_ids'].to(device)
         sent_outputs = model.generate(
@@ -109,7 +86,7 @@ if __name__ == "__main__":
     
     test_loader = loaders.init_loader(args)
 
-    gen_sums, target_sums, article_ids, section_ids = generate_summaries(test_loader, args)
+    gen_sums, target_sums, article_ids, section_ids = generate_summaries(test_loader, args, device=device)
     
     print("Scoring generated summaries")
     if args.mode == "dancer":
@@ -118,5 +95,3 @@ if __name__ == "__main__":
         metrics_df = scoring.score_standard(gen_sums, target_sums)
     
     print(metrics_df)
-
-    
