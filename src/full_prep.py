@@ -118,7 +118,7 @@ if __name__ == "__main__":
     scorer = rouge_scorer.RougeScorer(metrics, use_stemmer=True)
 
     conf = pyspark.SparkConf()
-    conf.set('spark.driver.memory', '12g')
+    conf.set('spark.driver.memory', '24g')
     sc = pyspark.SparkContext(conf=conf)
     spark = pyspark.sql.SparkSession(sc)
 
@@ -175,6 +175,7 @@ if __name__ == "__main__":
                 F.col("full_text_section").section_head.alias("section_head"),
                 F.col("full_text_section").section_idx.alias("section_idx"),
                 F.col("matched_summaries"),
+                "abstract_text",
                 "article_id") \
             .withColumn(
                 "section_summary",
@@ -193,8 +194,14 @@ if __name__ == "__main__":
                 "summary",
                 F.concat_ws(" ", F.col("section_summary"))) \
             .withColumn(
+                "abstract",
+                F.concat_ws(" ", F.col("abstract_text"))) \
+            .withColumn(
                 "summary",
                 F.regexp_replace("summary", "<\/?S>", "")) \
+            .withColumn(
+                "abstract",
+                F.regexp_replace("abstract", "<\/?S>", "")) \
             .withColumn(
                 "document_len",
                 F.size(F.split(F.col("document"), " "))) \
@@ -207,7 +214,8 @@ if __name__ == "__main__":
                 "article_id",
                 "section_id",
                 "document",
-                "summary")
+                "summary",
+                "abstract")
         
         if prefix not in ['val', 'test']:
             df = df.where(
