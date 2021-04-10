@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 import torch
 
-from src import scoring
-from src import loaders
+import scoring
+import loaders
 
 
 logging.getLogger(__name__)
@@ -25,6 +25,7 @@ def generate_summaries(test_loader, args, device):
     target_sums = []
     article_ids = []
     section_ids = []
+    abstracts = []
     for i, batch in enumerate(tqdm(test_loader)):
         model_inputs = tokenizer(
             batch[args.text_column],
@@ -48,10 +49,11 @@ def generate_summaries(test_loader, args, device):
         try:
             article_ids += batch["article_id"]
             section_ids += batch["section_id"]
+            abstracts += batch["abstract"]
         except:
             pass
         
-    return gen_sums, target_sums, article_ids, section_ids
+    return gen_sums, target_sums, article_ids, section_ids, abstracts
 
 
 if __name__ == "__main__":
@@ -84,13 +86,15 @@ if __name__ == "__main__":
     
     s_time = time.time()
     
+    select_sections = ["i", "m", "r", "c"]
+    print(f"Mode: {args.mode}")
     test_loader = loaders.init_loader(args)
 
-    gen_sums, target_sums, article_ids, section_ids = generate_summaries(test_loader, args, device=device)
+    gen_sums, target_sums, article_ids, section_ids, abstracts = generate_summaries(test_loader, args, device=device)
     
     print("Scoring generated summaries")
     if args.mode == "dancer":
-        metrics_df = scoring.score_dancer(gen_sums, target_sums, article_ids, section_ids)
+        metrics_df = scoring.score_dancer(gen_sums, abstracts, article_ids, section_ids, select_sections)
     else:
         metrics_df = scoring.score_standard(gen_sums, target_sums)
     

@@ -15,13 +15,18 @@ def score_generations(df):
     return metrics
 
 
-def score_dancer(gen_sums, target_sums, article_ids, section_ids):
+def score_dancer(gen_sums, target_sums, article_ids, section_ids, select_sections=None):
     df = pd.DataFrame(
             list(zip(article_ids, section_ids, target_sums, gen_sums)),
-            columns=["article_id", "section_id", "target_sum", "gen_sum"]) \
-        .groupby("article_id") \
-        .agg({"target_sum": ' '.join, "gen_sum": ' '.join})
+            columns=["article_id", "section_id", "target_sum", "gen_sum"])
     
+    if select_sections is not None:
+        df = df[df["section_id"].isin(select_sections)]
+    
+    df = df.groupby(["article_id", "target_sum"]) \
+        .agg({"gen_sum": ' '.join}) \
+        .reset_index()
+
     metrics = score_generations(df)
     
     return metrics
