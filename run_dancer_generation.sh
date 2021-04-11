@@ -1,6 +1,8 @@
 python src/dancer_generation.py \
     --mode dancer \
+    --max_test_samples 500 \
     --model_path dancer_pubmed/models \
+    --output_path dancer_pubmed \
     --data_path /home/jupyter/pubmed-dataset/processed/pubmed/test.json \
     --text_column document \
     --summary_column summary \

@@ -1,7 +1,7 @@
 import time
+import os
 import random
 import argparse
-import logging
 from tqdm import tqdm
 
 import torch
@@ -9,8 +9,6 @@ import torch
 import scoring
 import loaders
 
-
-logging.getLogger(__name__)
 
 doc_keys = {
     "xsum": {"summary": "summary", "source": "document"},
@@ -65,6 +63,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, help="")
     parser.add_argument("--model_path", type=str, help="")
+    parser.add_argument("--output_path", type=str, help="")
     parser.add_argument("--dataset_name", type=str, help="")
     parser.add_argument("--dataset_config_name", type=str, help="")
     parser.add_argument("--data_path", type=str, help="")
@@ -88,14 +87,18 @@ if __name__ == "__main__":
     
     select_sections = ["i", "m", "r", "c"]
     print(f"Mode: {args.mode}")
+    if not os.path.exists(args.output_path):
+        os.mkdir(args.output_path)
+    out_path = os.path.join(args.output_path, "generations")
     test_loader = loaders.init_loader(args)
 
     gen_sums, target_sums, article_ids, section_ids, abstracts = generate_summaries(test_loader, args, device=device)
     
     print("Scoring generated summaries")
     if args.mode == "dancer":
-        metrics_df = scoring.score_dancer(gen_sums, abstracts, article_ids, section_ids, select_sections)
+        scoring.score_dancer(gen_sums, abstracts, article_ids, section_ids, out_path, select_sections)
     else:
-        metrics_df = scoring.score_standard(gen_sums, target_sums)
+        scoring.score_standard(gen_sums, target_sums, article_ids, out_path)
     
-    print(metrics_df)
+    scores_dict = scoring.score_outputs(out_path)
+    scoring.rouge_log(scores_dict, out_path)
