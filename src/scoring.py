@@ -19,7 +19,14 @@ def score_generations(df):
     return metrics
 
 
-def score_dancer(gen_sums, target_sums, article_ids, section_ids, out_path, select_sections=None):
+def score_dancer(
+        gen_sums,
+        target_sums,
+        article_ids,
+        section_ids,
+        out_path,
+        select_sections=None,
+        write_gens=False):
     df = pd.DataFrame(
             list(zip(article_ids, section_ids, target_sums, gen_sums)),
             columns=["article_id", "section_id", "target_sum", "gen_sum"])
@@ -31,21 +38,32 @@ def score_dancer(gen_sums, target_sums, article_ids, section_ids, out_path, sele
         .agg({"gen_sum": ' '.join}) \
         .reset_index()
 
-#     metrics = score_generations(df)
-    write_gen(df, out_path)
-    
-#     return metrics
+    metrics = None
+    if write_gens:
+        write_gen(df, out_path)
+    else:
+        metrics = score_generations(df)
+
+    return metrics
 
 
-def score_standard(gen_sums, target_sums, article_ids, out_path):
+def score_standard(
+        gen_sums,
+        target_sums,
+        article_ids,
+        out_path,
+        write_gens=False):
     df = pd.DataFrame(
             list(zip(article_ids, target_sums, gen_sums)),
             columns=["article_id", "target_sum", "gen_sum"])
     
-#     metrics = score_generations(df)
-    write_gen(df, out_path)
-    
-#     return metrics
+    metrics = None
+    if write_gens:
+        write_gen(df, out_path)
+    else:
+        metrics = score_generations(df)
+
+    return metrics
 
 
 def write_gen(df, out_path):

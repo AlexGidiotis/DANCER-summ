@@ -74,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_source_length", type=int, default=512, help="")
     parser.add_argument("--max_summary_length", type=int, default=128, help="")
     parser.add_argument("--max_test_samples", type=int, help="")
+    parser.add_argument("--write_rouge", type=int, default=0, help="")
     parser.add_argument("--seed", type=int, default=10, help="")
     parser.add_argument("--test_batch_size", type=int, default=2, help="")
     parser.add_argument("--num_beams", type=int, default=3, help="")
@@ -82,6 +83,7 @@ if __name__ == "__main__":
     
     random.seed(args.seed)
     torch.manual_seed(args.seed)
+    write_rouge = bool(args.write_rouge)
     
     s_time = time.time()
     
@@ -96,9 +98,24 @@ if __name__ == "__main__":
     
     print("Scoring generated summaries")
     if args.mode == "dancer":
-        scoring.score_dancer(gen_sums, abstracts, article_ids, section_ids, out_path, select_sections)
+        metrics = scoring.score_dancer(
+            gen_sums=gen_sums,
+            target_sums=abstracts,
+            article_ids=article_ids,
+            section_ids=section_ids,
+            out_path=out_path,
+            select_sections=select_sections,
+            write_gens=write_rouge)
     else:
-        scoring.score_standard(gen_sums, target_sums, article_ids, out_path)
-    
-    scores_dict = scoring.score_outputs(out_path)
-    scoring.rouge_log(scores_dict, out_path)
+        metrics = scoring.score_standard(
+            gen_sums=gen_sums,
+            target_sums=target_sums,
+            article_ids=article_ids,
+            out_path=out_path,
+            write_gens=write_rouge)
+
+    if write_rouge:
+        scores_dict = scoring.score_outputs(out_path)
+        scoring.rouge_log(scores_dict, out_path)
+    else:
+        print(metrics)
