@@ -8,6 +8,7 @@ from datasets import load_metric
 
 
 def score_generations(df):
+    """Score generations using the python rouge library"""
     rouge = load_metric("rouge")
     
     df["rouge"] = df[["gen_sum", "target_sum"]].apply(
@@ -27,6 +28,7 @@ def score_dancer(
         out_path,
         select_sections=None,
         write_gens=False):
+    """Assemble and score DANCER summaries"""
     df = pd.DataFrame(
             list(zip(article_ids, section_ids, target_sums, gen_sums)),
             columns=["article_id", "section_id", "target_sum", "gen_sum"])
@@ -53,6 +55,7 @@ def score_standard(
         article_ids,
         out_path,
         write_gens=False):
+    """Score standard summaries"""
     df = pd.DataFrame(
             list(zip(article_ids, target_sums, gen_sums)),
             columns=["article_id", "target_sum", "gen_sum"])
@@ -67,6 +70,7 @@ def score_standard(
 
 
 def write_gen(df, out_path):
+    """Write hypothesis and reference summaries to files for scoring with the official rouge"""
     hyp_path = os.path.join(out_path, "hyp")
     ref_path = os.path.join(out_path, "ref")
     if not os.path.exists(out_path):
@@ -82,6 +86,7 @@ def write_gen(df, out_path):
             
             
 def score_outputs(out_path):
+    """Score output files using the official perl rouge library"""
     from pyrouge import Rouge155
     
     hyp_path = os.path.join(out_path, "hyp")
@@ -99,6 +104,7 @@ def score_outputs(out_path):
 
 
 def rouge_log(results_dict, dir_to_write):
+    """Log rouge metrics outputted by the official rouge library"""
     log_str = ""
     for x in ["1","2","l"]:
         log_str += "\nROUGE-%s:\n" % x

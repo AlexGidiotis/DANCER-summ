@@ -10,13 +10,8 @@ import scoring
 import loaders
 
 
-doc_keys = {
-    "xsum": {"summary": "summary", "source": "document"},
-    "pubmed": {"summary": "abstract", "source": "article"},
-}
-
-
 def generate_summaries(test_loader, args, device):
+    """Run summary generation for a given DataLoader"""
     model, tokenizer = loaders.load_model(args, device=device)
     
     gen_sums = []
@@ -54,12 +49,7 @@ def generate_summaries(test_loader, args, device):
     return gen_sums, target_sums, article_ids, section_ids, abstracts
 
 
-if __name__ == "__main__":
-    # CUDA for PyTorch
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda:0" if use_cuda else "cpu")
-    torch.backends.cudnn.benchmark = True
-    
+def read_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, help="")
     parser.add_argument("--model_path", type=str, help="")
@@ -69,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, help="")
     parser.add_argument("--text_column", type=str, help="")
     parser.add_argument("--summary_column", type=str, help="")
-    
+
     parser.add_argument("--tokenizer_name", type=str, help="")
     parser.add_argument("--max_source_length", type=int, default=512, help="")
     parser.add_argument("--max_summary_length", type=int, default=128, help="")
@@ -80,13 +70,24 @@ if __name__ == "__main__":
     parser.add_argument("--num_beams", type=int, default=3, help="")
 
     args, unknown = parser.parse_known_args()
-    
+
+    return args, unknown
+
+
+def main():
+    # CUDA for PyTorch
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda:0" if use_cuda else "cpu")
+    torch.backends.cudnn.benchmark = True
+
+    args, unknown = read_args()
+
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     write_rouge = bool(args.write_rouge)
-    
+
     s_time = time.time()
-    
+
     select_sections = ["i", "m", "r", "c"]
     print(f"Mode: {args.mode}")
     if not os.path.exists(args.output_path):
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     test_loader = loaders.init_loader(args)
 
     gen_sums, target_sums, article_ids, section_ids, abstracts = generate_summaries(test_loader, args, device=device)
-    
+
     print("Scoring generated summaries")
     if args.mode == "dancer":
         metrics = scoring.score_dancer(
@@ -119,3 +120,7 @@ if __name__ == "__main__":
         scoring.rouge_log(scores_dict, out_path)
     else:
         print(metrics)
+
+
+if __name__ == "__main__":
+    main()

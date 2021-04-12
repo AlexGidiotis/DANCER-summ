@@ -5,6 +5,7 @@ from datasets import load_dataset
 
 
 def init_loader(args):
+    """Initialize test DataLoader"""
     if args.dataset_name is not None:
         datasets = load_dataset(args.dataset_name, args.dataset_config_name)
     else:
@@ -26,6 +27,7 @@ def init_loader(args):
 
 
 def load_model(args, device):
+    """Load model and tokenizer"""
     print(f"Loading tokenizer {args.tokenizer_name if args.tokenizer_name else args.model_path}")
     tokenizer = AutoTokenizer.from_pretrained(
         args.tokenizer_name if args.tokenizer_name else args.model_path)
