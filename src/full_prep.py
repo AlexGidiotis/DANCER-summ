@@ -63,7 +63,14 @@ def rouge_targets(abstract_sentences, section_sentences, rg_scorer):
 
 
 def section_identify(keywords):
+    """UDF wrapper for section_identify_"""
     def section_identify_(head):
+        """
+        Given a section header and a map of keywords, tries to identify and match
+        the section with one of the predefined section types. If multiple different
+        keywords appear in the header, the first one is always matched. If no
+        keyword is found then the section is identified as other ('o').
+        """
         head = head.lower().split()
         sec_id = 'o'
         for wrd in head:
@@ -78,7 +85,13 @@ def section_identify(keywords):
 
 
 def rouge_match(scorer):
+    """UDF wrapper for rouge_match_"""
     def rouge_match_(cols):
+        """
+        Given the full text of a section and an array of summary sentences,
+        computes the ROUGE-L score of each summary sentence with the section text.
+        See the definition of 'rouge_targets' for more details.
+        """
         full_section, summary_sents = cols.text_section, cols.abstract_text
         
         section_text = full_section[1]
@@ -89,17 +102,26 @@ def rouge_match(scorer):
 
 
 def summary_match(col):
+    """
+    Given an array with the score arrays of each summary sentence we match
+    each summary sentence with the section that has the highest similarity score.
+    """
     scores = np.array(col)
     max_idx = np.argmax(scores, axis=0)
     return max_idx.tolist()
 
 
 def index_array(col):
+    """
+    Assemble an array of (head, text) tuples into an array of
+    {"section_head": head, "section_text": text, "section_idx": i}
+    """
     indexed_text = [{"section_head": h, "section_text": t, "section_idx": i} for i, (h, t) in enumerate(col)]
     return indexed_text
 
 
 def collect_summary(cols):
+    """Select the summary sentences that are matched with a given section into an array of sentences"""
     section_idx, matched_summaries = cols.section_idx, cols.matched_summaries
     collected_summary = [t for (t, s_idx) in matched_summaries if s_idx == section_idx]
     return collected_summary
@@ -109,6 +131,8 @@ def read_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_root", type=str, help="")
     parser.add_argument("--task", type=str, help="")
+    parser.add_argument("--driver_memory", type=str, default="16g", help="")
+    parser.add_argument("--partitions", type=int, default=500, help="")
 
     args, unknown = parser.parse_known_args()
     return args, unknown
@@ -126,7 +150,7 @@ def main():
     scorer = rouge_scorer.RougeScorer(metrics, use_stemmer=True)
 
     conf = pyspark.SparkConf()
-    conf.set('spark.driver.memory', '24g')
+    conf.set('spark.driver.memory', args.driver_memory)
     sc = pyspark.SparkContext(conf=conf)
     spark = pyspark.sql.SparkSession(sc)
 
@@ -153,7 +177,7 @@ def main():
 
     for data_path, prefix in zip(data_paths, data_prefixes):
         df = spark.read.json(data_path) \
-            .repartition(500, "article_id")
+            .repartition(args.partitions, "article_id")
 
         b_keywords = sc.broadcast(KEYWORDS)
         df = df.withColumn(
