@@ -593,13 +593,9 @@ def main():
         )
         metrics["train_samples"] = min(max_train_samples, len(train_dataset))
 
-#         trainer.log_metrics("train", metrics)
-#         trainer.save_metrics("train", metrics)
-#         trainer.save_state()
     train_metrics = metrics
     
     # Evaluation
-    results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate ***")
 
@@ -609,8 +605,6 @@ def main():
         max_val_samples = data_args.max_val_samples if data_args.max_val_samples is not None else len(eval_dataset)
         metrics["eval_samples"] = min(max_val_samples, len(eval_dataset))
 
-#         trainer.log_metrics("eval", metrics)
-#         trainer.save_metrics("eval", metrics)
     eval_metrics = metrics
     print(eval_metrics)
 
@@ -626,9 +620,6 @@ def main():
         metrics = test_results.metrics
         max_test_samples = data_args.max_test_samples if data_args.max_test_samples is not None else len(test_dataset)
         metrics["test_samples"] = min(max_test_samples, len(test_dataset))
-
-#         trainer.log_metrics("test", metrics)
-#         trainer.save_metrics("test", metrics)
 
         if trainer.is_world_process_zero():
             if training_args.predict_with_generate:

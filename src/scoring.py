@@ -106,17 +106,17 @@ def score_outputs(out_path):
 def rouge_log(results_dict, dir_to_write):
     """Log rouge metrics outputted by the official rouge library"""
     log_str = ""
-    for x in ["1","2","l"]:
+    for x in ["1", "2", "l"]:
         log_str += "\nROUGE-%s:\n" % x
         for y in ["f_score", "recall", "precision"]:
-            key = "rouge_%s_%s" % (x,y)
+            key = "rouge_%s_%s" % (x, y)
             key_cb = key + "_cb"
             key_ce = key + "_ce"
             val = results_dict[key]
             val_cb = results_dict[key_cb]
             val_ce = results_dict[key_ce]
             log_str += "%s: %.4f with confidence interval (%.4f, %.4f)\n" % (key, val, val_cb, val_ce)
-    print(log_str) # log to screen
+    print(log_str)  # log to screen
     results_file = os.path.join(dir_to_write, "ROUGE_results.txt")
     print(f"Writing final ROUGE results to {results_file}")
     with open(results_file, "w") as f:

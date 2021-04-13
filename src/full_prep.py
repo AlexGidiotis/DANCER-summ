@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import numpy as np
 
@@ -8,8 +9,6 @@ from pyspark.sql import types as spark_types
 
 from rouge_score import rouge_scorer
 
-data_root = "/home/jupyter/pubmed-dataset"
-task = 'pubmed'
 
 KEYWORDS = {
     'introduction': 'i',
@@ -52,13 +51,11 @@ def rouge_targets(abstract_sentences, section_sentences, rg_scorer):
 
     for j, abs_sent in enumerate(abstract_sentences):
         max_rouge = 0.
-        max_sec = None
         for si, sec_sent in enumerate(section_sentences):
             rouge_score = rg_scorer.score(abs_sent, sec_sent)
             rouge_r = rouge_score['rougeL'][1]
             if rouge_r > max_rouge:
                 max_rouge = rouge_r
-                max_sent = si
 
         sum_targets[j] = max_rouge
 
@@ -108,10 +105,21 @@ def collect_summary(cols):
     return collected_summary
 
 
-if __name__ == "__main__":
-    train_data = os.path.join(data_root, 'train.txt')
-    val_data = os.path.join(data_root, 'val.txt')
-    test_data = os.path.join(data_root, 'test.txt')
+def read_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_root", type=str, help="")
+    parser.add_argument("--task", type=str, help="")
+
+    args, unknown = parser.parse_known_args()
+    return args, unknown
+
+
+def main():
+    args, unknown = read_args()
+
+    train_data = os.path.join(args.data_root, 'train.txt')
+    val_data = os.path.join(args.data_root, 'val.txt')
+    test_data = os.path.join(args.data_root, 'test.txt')
     selected_section_types = ["i", "m", "r", "l", "c"]
 
     metrics = ['rouge1', 'rouge2', 'rougeL']
@@ -124,7 +132,7 @@ if __name__ == "__main__":
 
     data_prefixes = ['train', 'val', 'test']
     data_paths = [train_data, val_data, test_data]
-    task_output_dir = os.path.join("/home/jupyter/pubmed-dataset/processed", task)
+    task_output_dir = os.path.join(args.data_root, "processed", args.task)
     if not os.path.exists(task_output_dir):
         os.makedirs(task_output_dir)
 
@@ -142,87 +150,91 @@ if __name__ == "__main__":
     collect_summary_udf = F.udf(
         collect_summary,
         spark_types.ArrayType(spark_types.StringType()))
-    
+
     for data_path, prefix in zip(data_paths, data_prefixes):
         df = spark.read.json(data_path) \
             .repartition(500, "article_id")
-        
+
         b_keywords = sc.broadcast(KEYWORDS)
         df = df.withColumn(
-                'zipped_text',
-                F.arrays_zip(F.col('section_names'), F.col('sections'))) \
+            'zipped_text',
+            F.arrays_zip(F.col('section_names'), F.col('sections'))) \
             .withColumn(
-                "text_section",
-                F.explode("zipped_text")) \
+            "text_section",
+            F.explode("zipped_text")) \
             .withColumn(
-                "summary_scores",
-                rouge_match(scorer)(F.struct(F.col('text_section'), F.col('abstract_text')))) \
+            "summary_scores",
+            rouge_match(scorer)(F.struct(F.col('text_section'), F.col('abstract_text')))) \
             .groupby(["abstract_text", "article_id"]) \
             .agg(
-                F.collect_list("summary_scores").alias("summary_scores"),
-                F.collect_list("text_section").alias("full_text_sections")) \
+            F.collect_list("summary_scores").alias("summary_scores"),
+            F.collect_list("text_section").alias("full_text_sections")) \
             .withColumn(
-                "matched_summaries",
-                summary_match_udf("summary_scores")) \
+            "matched_summaries",
+            summary_match_udf("summary_scores")) \
             .withColumn(
-                "full_text_sections",
-                index_array_udf("full_text_sections")) \
+            "full_text_sections",
+            index_array_udf("full_text_sections")) \
             .withColumn(
-                "matched_summaries",
-                F.arrays_zip(F.col("abstract_text"), F.col("matched_summaries"))) \
+            "matched_summaries",
+            F.arrays_zip(F.col("abstract_text"), F.col("matched_summaries"))) \
             .select(
-                F.explode(F.col("full_text_sections")).alias("full_text_section"),
-                F.col("full_text_section").section_head.alias("section_head"),
-                F.col("full_text_section").section_idx.alias("section_idx"),
-                F.col("matched_summaries"),
-                "abstract_text",
-                "article_id") \
+            F.explode(F.col("full_text_sections")).alias("full_text_section"),
+            F.col("full_text_section").section_head.alias("section_head"),
+            F.col("full_text_section").section_idx.alias("section_idx"),
+            F.col("matched_summaries"),
+            "abstract_text",
+            "article_id") \
             .withColumn(
-                "section_summary",
-                collect_summary_udf(F.struct(F.col("section_idx"), F.col("matched_summaries")))) \
+            "section_summary",
+            collect_summary_udf(F.struct(F.col("section_idx"), F.col("matched_summaries")))) \
             .where(
-                F.size(F.col("section_summary")) > 0) \
+            F.size(F.col("section_summary")) > 0) \
             .withColumn(
-                'section_id',
-                section_identify(b_keywords)('section_head')) \
+            'section_id',
+            section_identify(b_keywords)('section_head')) \
             .where(
-                F.col("section_id").isin(selected_section_types)) \
+            F.col("section_id").isin(selected_section_types)) \
             .withColumn(
-                "document",
-                F.concat_ws(" ", F.col("full_text_section").section_text)) \
+            "document",
+            F.concat_ws(" ", F.col("full_text_section").section_text)) \
             .withColumn(
-                "summary",
-                F.concat_ws(" ", F.col("section_summary"))) \
+            "summary",
+            F.concat_ws(" ", F.col("section_summary"))) \
             .withColumn(
-                "abstract",
-                F.concat_ws(" ", F.col("abstract_text"))) \
+            "abstract",
+            F.concat_ws(" ", F.col("abstract_text"))) \
             .withColumn(
-                "summary",
-                F.regexp_replace("summary", "<\/?S>", "")) \
+            "summary",
+            F.regexp_replace("summary", "<\/?S>", "")) \
             .withColumn(
-                "abstract",
-                F.regexp_replace("abstract", "<\/?S>", "")) \
+            "abstract",
+            F.regexp_replace("abstract", "<\/?S>", "")) \
             .withColumn(
-                "document_len",
-                F.size(F.split(F.col("document"), " "))) \
+            "document_len",
+            F.size(F.split(F.col("document"), " "))) \
             .withColumn(
-                "summary_len",
-                F.size(F.split(F.col("summary"), " "))) \
+            "summary_len",
+            F.size(F.split(F.col("summary"), " "))) \
             .where(
-                F.col('document_len') > 50) \
+            F.col('document_len') > 50) \
             .select(
-                "article_id",
-                "section_id",
-                "document",
-                "summary",
-                "abstract")
-        
+            "article_id",
+            "section_id",
+            "document",
+            "summary",
+            "abstract")
+
         if prefix not in ['val', 'test']:
             df = df.where(
                 F.col('summary_len') > 50)
-            
-        df = df.write.json(
+
+        df.write.json(
             path=os.path.join(task_output_dir, prefix),
             mode="overwrite")
 
-        print(f"Finished writting {prefix} split to {task_output_dir}")     
+        print(f"Finished writing {prefix} split to {task_output_dir}")
+
+
+if __name__ == "__main__":
+    main()

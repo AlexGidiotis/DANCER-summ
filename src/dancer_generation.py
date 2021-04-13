@@ -1,4 +1,3 @@
-import time
 import os
 import random
 import argparse
@@ -35,7 +34,8 @@ def generate_summaries(test_loader, args, device):
             return_dict_in_generate=True,
             output_scores=True)  # only one beam should be equivalent to greedy,
         gen_sum = [
-            tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in sent_outputs["sequences"]]
+            tokenizer.decode(
+                g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in sent_outputs["sequences"]]
 
         gen_sums += gen_sum
         target_sums += batch[args.summary_column]
@@ -43,7 +43,7 @@ def generate_summaries(test_loader, args, device):
             article_ids += batch["article_id"]
             section_ids += batch["section_id"]
             abstracts += batch["abstract"]
-        except:
+        except KeyError:
             pass
         
     return gen_sums, target_sums, article_ids, section_ids, abstracts
@@ -85,8 +85,6 @@ def main():
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     write_rouge = bool(args.write_rouge)
-
-    s_time = time.time()
 
     select_sections = ["i", "m", "r", "c"]
     print(f"Mode: {args.mode}")
