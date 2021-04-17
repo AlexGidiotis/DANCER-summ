@@ -44,6 +44,7 @@ def generate_summaries(test_loader, args, device):
             section_ids += batch["section_id"]
             abstracts += batch["abstract"]
         except KeyError:
+            article_ids += [i]
             pass
         
     return gen_sums, target_sums, article_ids, section_ids, abstracts
@@ -92,9 +93,8 @@ def main():
         os.mkdir(args.output_path)
     out_path = os.path.join(args.output_path, "generations")
     test_loader = loaders.init_loader(args)
-
     gen_sums, target_sums, article_ids, section_ids, abstracts = generate_summaries(test_loader, args, device=device)
-
+    
     print("Scoring generated summaries")
     if args.mode == "dancer":
         metrics = scoring.score_dancer(

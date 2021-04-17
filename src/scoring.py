@@ -1,4 +1,6 @@
 import os
+import shutil
+import re
 import logging
 
 import pandas as pd
@@ -69,20 +71,28 @@ def score_standard(
     return metrics
 
 
+def process_write(text):
+    """"""
+    proc_text = re.sub("\n", " ", text)
+    proc_text = re.sub("<n>", "", proc_text)
+    return proc_text
+
+
 def write_gen(df, out_path):
     """Write hypothesis and reference summaries to files for scoring with the official rouge"""
     hyp_path = os.path.join(out_path, "hyp")
     ref_path = os.path.join(out_path, "ref")
-    if not os.path.exists(out_path):
-        os.mkdir(out_path)
-        os.mkdir(hyp_path)
-        os.mkdir(ref_path)
-        
+    if os.path.exists(out_path):
+        shutil.rmtree(out_path)
+    os.mkdir(out_path)
+    os.mkdir(hyp_path)
+    os.mkdir(ref_path)
+                
     for row in tqdm(df.iterrows()):
         aid, ref, hyp = row[1]["article_id"], row[1]["target_sum"], row[1]["gen_sum"]
         with open(os.path.join(hyp_path, f"hyp_{aid}.txt"), 'w') as hf, open(os.path.join(ref_path, f"ref_{aid}.txt"), 'w') as rf:
-            hf.write(hyp)
-            rf.write(ref)
+            hf.write(process_write(hyp))
+            rf.write(process_write(ref))
             
             
 def score_outputs(out_path):
