@@ -2,7 +2,7 @@
 This repository contains code for the paper [A Divide-and-Conquer Approach to the Summarization of Long Documents](https://arxiv.org/abs/2004.06190),
 which was published in the IEEE/ACM Transactions on Audio, Speech, and Language Processing.
 
-_Note: The model implementation, initial models and ROUGE implementations
+_Note: The model implementation, initial model checkpoints and ROUGE implementations
 are different from the original published paper, so the results might be a bit different._
 
 ## Data
