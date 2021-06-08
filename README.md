@@ -73,3 +73,18 @@ Once you have a trained DANCER model you can run summary generation running
 --num_beams: number of beams for beam search decoding
 ```
 
+## How to Cite
+If you extend or use this work, please consider citing the [paper](https://ieeexplore.ieee.org/abstract/document/9257174/):
+
+```bibtex
+@article{gidiotis2020divide,
+  author={Gidiotis, Alexios and Tsoumakas, Grigorios},
+  journal={IEEE/ACM Transactions on Audio, Speech, and Language Processing}, 
+  title={A Divide-and-Conquer Approach to the Summarization of Long Documents}, 
+  year={2020},
+  volume={28},
+  number={},
+  pages={3029-3040},
+  doi={10.1109/TASLP.2020.3037401}
+}
+```
